@@ -430,7 +430,7 @@
 (defn settings-file-path
   []
   (if (running-linux?)
-    (.getAbsolutePath (io/file (home-dir) "settings.edn"))
+    (.getAbsolutePath (io/file (home-dir) ".local/share/gd-edit/settings.edn"))
     (.getAbsolutePath (io/file (working-directory) "settings.edn"))))
 
 (defn load-settings
