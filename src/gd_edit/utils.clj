@@ -429,7 +429,9 @@
 ;;------------------------------------------------------------------------------
 (defn settings-file-path
   []
-  (.getAbsolutePath (io/file (working-directory) "settings.edn")))
+  (if (running-linux?)
+    (.getAbsolutePath (io/file (home-dir) "settings.edn"))
+    (.getAbsolutePath (io/file (working-directory) "settings.edn"))))
 
 (defn load-settings
   []

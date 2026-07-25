@@ -101,7 +101,7 @@
     (u/expand-home "~/Dropbox/Public/GrimDawn/main")
 
     (u/running-linux?)
-    ""
+    (or (get @globals/settings :save-dir) "")
 
     :else
     (.getPath (io/file (u/home-dir) "Documents\\My Games\\Grim Dawn\\save\\main"))))
