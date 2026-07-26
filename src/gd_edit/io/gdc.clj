@@ -123,22 +123,36 @@
    :relic-completion-level :int32
    :stack-count            :int32))
 
+;; GD 1.3.0+ (Fangs of Asterkarn) appends four int32 fields after stack-count on
+;; character inventory/equipment/personal-stash items (block 3/4 version 11).
+;; Names are provisional; related transfer-stash v8+ fields in Item Assistant are
+;; AscendantRecord / AscendantRecord2H / Rerolls (different layout — see stash.clj).
+(def Item-v13-fields
+  (s/struct-def
+   :13-unk1 :int32
+   :13-unk2 :int32
+   :13-unk3 :int32
+   :13-unk4 :int32))
+
 (def InventoryItem
   (into Item
-        (s/struct-def
-         :X :int32
-         :Y :int32)))
+        (into Item-v13-fields
+              (s/struct-def
+               :X :int32
+               :Y :int32))))
 
 (def StashItem
   (into Item
-        (s/struct-def
-         :X :int32
-         :Y :int32)))
+        (into Item-v13-fields
+              (s/struct-def
+               :X :int32
+               :Y :int32))))
 
 (def EquipmentItem
   (into Item
-        (s/struct-def
-         :attached :bool)))
+        (into Item-v13-fields
+              (s/struct-def
+               :attached :bool))))
 
 
 (def InventorySack
@@ -252,12 +266,30 @@
    :width  :int32
    :height :int32
 
-   :items  (s/array StashItem)))
+   :items  (s/array StashItem)
+
+   ;; GD 1.3 / FoA: per-tab border/symbol/label (same shape as transfer stash v9+)
+   :border-index       (s/conditional (fn [_ context]
+                                        (when (>= (or (:stash-container-version @context) 0) 9)
+                                          :int32)))
+   :border-color-index (s/conditional (fn [_ context]
+                                        (when (>= (or (:stash-container-version @context) 0) 9)
+                                          :int32)))
+   :symbol-index       (s/conditional (fn [_ context]
+                                        (when (>= (or (:stash-container-version @context) 0) 9)
+                                          :int32)))
+   :symbol-color-index (s/conditional (fn [_ context]
+                                        (when (>= (or (:stash-container-version @context) 0) 9)
+                                          :int32)))
+   :button-name        (s/conditional (fn [_ context]
+                                        (when (>= (or (:stash-container-version @context) 0) 9)
+                                          (s/string :utf-16-le))))))
 
 (defn read-block4
   [^ByteBuffer bb context]
 
   (let [version (read-int! bb context)
+        _ (swap! context assoc :stash-container-version version)
         stash-count (read-int! bb context)
 
         stashes (reduce (fn  [accum _]
@@ -271,6 +303,7 @@
   [^ByteBuffer bb block context]
 
   (write-int! bb (:version block) context)
+  (swap! context assoc :stash-container-version (:version block))
   (write-int! bb (count (:stashes block)) context)
 
   (doseq [stash (:stashes block)]
@@ -329,6 +362,8 @@
    :skill-name               (s/string :ascii)
    :level                    :int32
    :enabled                  :bool
+   ;; GD 1.3 / block8 version 8+: extra flag after enabled
+   :8-skill-unk              :bool
    :devotion-level           :int32
    :devotion-experience      :int32
    :sublevel                 :int32
@@ -452,15 +487,25 @@
    :14-unk4                 (after-block-version 7 :int32)
 
    :hotslots                (s/conditional
-                             (fn [data _]
-                               (cond
-                                 (= (:version data) 4)
-                                 (s/array HotSlot :length 36)
-                                 :else
-                                 (s/array HotSlot :length 46))))
+                             (fn [data context]
+                               (let [version-data (if (= (:mode @context) :write)
+                                                    (peek (:anchor-stack @context))
+                                                    data)
+                                     version (:version version-data)]
+                                 (cond
+                                   (= version 4)
+                                   (s/array HotSlot :length 36)
+
+                                   ;; GD 1.3 / FoA: expanded hotbar (controller + dual-class pages)
+                                   (>= version 7)
+                                   (s/array HotSlot :length 95)
+
+                                   :else
+                                   (s/array HotSlot :length 46)))))
    :camera-distance        :float
 
-   :14-unk1                (after-block-version 6 :int32)
+   ;; Present in version 6 only; removed again when hotslots expanded in version 7+
+   :14-unk1                (between-block-version 6 6 :int32)
    {:anchor true}))
 
 (def Block15
@@ -528,6 +573,10 @@
 
    :unique-items-found          :int32
    :randomized-items-found      :int32
+
+   ;; GD 1.3.0+ (block16 version 12)
+   :16-unk1 (after-block-version 12 :int32)
+   :16-unk2 (after-block-version 12 :int32)
    {:anchor true}))
 
 
