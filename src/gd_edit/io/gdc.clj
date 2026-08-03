@@ -361,7 +361,7 @@
    :level                    :int32
    :enabled                  :bool
    ;; GD 1.3 / block8 version 8+: extra flag after enabled
-   :8-skill-unk              :bool
+   ;; :8-skill-unk              :bool
    :devotion-level           :int32
    :devotion-experience      :int32
    :sublevel                 :int32
@@ -1073,7 +1073,23 @@
          ;; Try to read the block
          ;; If a custom read function was provided, use that
          ;; Otherwise, try to read using a block spec
-         block-data (s/read-struct block-spec-or-read-fn bb context)
+         ;; block-data (s/read-struct block-spec-or-read-fn bb context)
+         ;; Try to read the block
+         ;; If a custom read function was provided, use that
+         ;; Otherwise, try to read using a block spec
+         block-data (try
+                      (s/read-struct block-spec-or-read-fn bb context)
+                      (catch Throwable e
+                        (u/print-line "")
+                        (u/print-line "!!! BLOCK READ FAILED !!!")
+                        (u/print-line "  block id:      " id)
+                        (u/print-line "  block length:  " length)
+                        (u/print-line "  block start:   " (- expected-end-position length))
+                        (u/print-line "  expected end:  " expected-end-position)
+                        (u/print-line "  pos at failure:" (.position bb))
+                        (u/print-line "  exception:     " (str e))
+                        (u/print-line "")
+                        (throw e)))
 
          _ (when *debug*
              (u/print-line "block-data")
