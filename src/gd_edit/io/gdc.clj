@@ -390,6 +390,7 @@
    :skill-name               (s/string :ascii)
    :level                    :int32
    :enabled                  :bool
+   :8-skill-unk              :bool
    :devotion-level           :int32
    :devotion-experience      :int32
    :sublevel                 :int32
