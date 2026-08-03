@@ -167,9 +167,16 @@
               (dirs/get-transfer-stash @globals/character))
     (watcher/tf-watcher-stop!))
 
-  (if-not (watcher/tf-watcher-started?)
-    (watcher/load-and-watch-transfer-stash!)
-    (watcher/attach-transfer-stash-to-character!))
+  (try
+    (if-not (watcher/tf-watcher-started?)
+      (watcher/load-and-watch-transfer-stash!)
+      (watcher/attach-transfer-stash-to-character!))
+    (catch Throwable e
+      (u/print-line "")
+      (u/print-line "WARNING: could not load the transfer stash (transfer.gst).")
+      (u/print-line "The character is loaded; stash commands will not work.")
+      (u/print-line (str "  " e))
+      (u/print-line "")))
 
   (future (when-let [quest-progress (quest/load-annotated-quest-progress savepath)]
             (swap! globals/character assoc :quest quest-progress))))
