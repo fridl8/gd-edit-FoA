@@ -371,13 +371,11 @@
              (s/array UID)
              :length 6)))
 
-(def CharacterSkill
+(def CharacterSkillFields
   (s/struct-def
    :skill-name               (s/string :ascii)
    :level                    :int32
    :enabled                  :bool
-   ;; GD 1.3 / block8 version 8+: extra flag after enabled
-   ;; :8-skill-unk              :bool
    :devotion-level           :int32
    :devotion-experience      :int32
    :sublevel                 :int32
@@ -385,6 +383,20 @@
    :skill-transition         :bool
    :autocast-skill-name      (s/string :ascii)
    :autocast-controller-name (s/string :ascii)))
+
+(defn read-character-skill
+  [^ByteBuffer bb context]
+  (let [start (.position bb)
+        skill (s/read-struct CharacterSkillFields bb context)]
+    (u/print-line (format "  skill start %6d end %6d size %4d  %s"
+                          start (.position bb) (- (.position bb) start)
+                          (:skill-name skill)))
+    skill))
+
+(def CharacterSkill
+  (with-meta CharacterSkillFields
+    (merge (meta CharacterSkillFields)
+           {:struct/read read-character-skill})))
 
 (def ItemSkill
   (s/struct-def
