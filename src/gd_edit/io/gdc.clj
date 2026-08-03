@@ -130,11 +130,7 @@
 ;; Names are provisional; related transfer-stash v8+ fields in Item Assistant are
 ;; AscendantRecord / AscendantRecord2H / Rerolls (different layout — see stash.clj).
 (def Item-v13-fields
-  (s/struct-def
-   :13-unk1 :int32
-   :13-unk2 :int32
-   :13-unk3 :int32
-   :13-unk4 :int32))
+  (s/struct-def))
 
 (def InventoryItem
   (into Item
