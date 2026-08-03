@@ -130,7 +130,19 @@
 ;; Names are provisional; related transfer-stash v8+ fields in Item Assistant are
 ;; AscendantRecord / AscendantRecord2H / Rerolls (different layout — see stash.clj).
 (def Item-v13-fields
-  (s/struct-def))
+  (s/struct-def
+   :13-unk1 (s/conditional (fn [_ context]
+                             (when (>= (or (:item-block-version @context) 0) 11)
+                               :int32)))
+   :13-unk2 (s/conditional (fn [_ context]
+                             (when (>= (or (:item-block-version @context) 0) 11)
+                               :int32)))
+   :13-unk3 (s/conditional (fn [_ context]
+                             (when (>= (or (:item-block-version @context) 0) 11)
+                               :int32)))
+   :13-unk4 (s/conditional (fn [_ context]
+                             (when (>= (or (:item-block-version @context) 0) 11)
+                               :int32)))))
 
 (def InventoryItem
   (into Item
@@ -163,6 +175,8 @@
   [^ByteBuffer bb context]
 
   (let [version (read-int! bb context)
+        _ (swap! context assoc :item-block-version version)
+        _ (u/print-line "  [diag] block3 version:" version)
         has-data (read-bool! bb context)]
     (if-not has-data
       {:version           version
@@ -212,6 +226,7 @@
   [^ByteBuffer bb block context]
 
   (write-int! bb (:version block) context)
+  (swap! context assoc :item-block-version (:version block))
   (write-bool! bb (:has-data block) context)
 
   (when (:has-data block)
@@ -288,6 +303,7 @@
 
   (let [version (read-int! bb context)
         _ (swap! context assoc :stash-container-version version)
+        _ (u/print-line "  [diag] block4 version:" version)
         stash-count (read-int! bb context)
 
         stashes (reduce (fn  [accum _]
