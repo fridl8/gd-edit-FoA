@@ -144,13 +144,6 @@
                              (when (>= (or (:item-block-version @context) 0) 11)
                                :int32)))))
 
-(def InventoryItem
-  (into Item
-        (into Item-v13-fields
-              (s/struct-def
-               :X :int32
-               :Y :int32))))
-
 (def StashItem
   (into Item
         (into Item-v13-fields
@@ -164,6 +157,27 @@
               (s/struct-def
                :attached :bool))))
 
+
+(def InventoryItemFields
+  (into Item
+        (into Item-v13-fields
+              (s/struct-def
+               :X :int32
+               :Y :int32))))
+
+(defn read-inventory-item
+  [^ByteBuffer bb context]
+  (let [start (.position bb)
+        item (s/read-struct InventoryItemFields bb context)]
+    (u/print-line (format "  item  start %6d end %6d size %4d  %s"
+                          start (.position bb) (- (.position bb) start)
+                          (:basename item)))
+    item))
+
+(def InventoryItem
+  (with-meta InventoryItemFields
+    (merge (meta InventoryItemFields)
+           {:struct/read read-inventory-item})))
 
 (def InventorySack
   (s/struct-def
@@ -371,7 +385,7 @@
              (s/array UID)
              :length 6)))
 
-(def CharacterSkill
+(def CharacterSkillFields
   (s/struct-def
    :skill-name               (s/string :ascii)
    :level                    :int32
@@ -383,6 +397,20 @@
    :skill-transition         :bool
    :autocast-skill-name      (s/string :ascii)
    :autocast-controller-name (s/string :ascii)))
+
+(defn read-character-skill
+  [^ByteBuffer bb context]
+  (let [start (.position bb)
+        skill (s/read-struct CharacterSkillFields bb context)]
+    (u/print-line (format "  skill start %6d end %6d size %4d  %s"
+                          start (.position bb) (- (.position bb) start)
+                          (:skill-name skill)))
+    skill))
+
+(def CharacterSkill
+  (with-meta CharacterSkillFields
+    (merge (meta CharacterSkillFields)
+           {:struct/read read-character-skill})))
 
 (def ItemSkill
   (s/struct-def
