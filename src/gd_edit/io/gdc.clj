@@ -410,34 +410,27 @@
    :my-faction     :int32
    :faction-values (s/array Faction)))
 
-(def hotslot-read-counter (atom 0))
-
 (defn read-hotslot
   [^ByteBuffer bb context]
 
-  (let [idx (swap! hotslot-read-counter inc)
-        start-pos (.position bb)
-        type (read-int! bb context)
-        result (cond
-                 (= type 0)
-                 {:type type
-                  :skill-name (read-string! bb context)
-                  :is-item-skill (read-bool! bb context)
-                  :item-name (read-string! bb context)
-                  :item-equip-location (read-int! bb context)}
+  (let [type (read-int! bb context)]
+    (cond
+      (= type 0)
+      {:type type
+       :skill-name (read-string! bb context)
+       :is-item-skill (read-bool! bb context)
+       :item-name (read-string! bb context)
+       :item-equip-location (read-int! bb context)}
 
-                 (= type 4)
-                 {:type type
-                  :item-name (read-string! bb context)
-                  :bitmap-up (read-string! bb context)
-                  :bitmap-down (read-string! bb context)
-                  :default-text (read-string! bb context {:encoding :utf-16-le})}
+      (= type 4)
+      {:type type
+       :item-name (read-string! bb context)
+       :bitmap-up (read-string! bb context)
+       :bitmap-down (read-string! bb context)
+       :default-text (read-string! bb context {:encoding :utf-16-le})}
 
-                 :else
-                 {:type type})]
-    (u/print-line (format "  hotslot %3d  start %6d  type %3d  end %6d"
-                          idx start-pos type (.position bb)))
-    result))
+      :else
+      {:type type})))
 
 (defn write-hotslot
   [^ByteBuffer bb hotslot context]
@@ -503,7 +496,7 @@
 
                                    ;; GD 1.3 / FoA: expanded hotbar (controller + dual-class pages)
                                    (>= version 7)
-                                   (s/array HotSlot :length 95)
+                                   (s/array HotSlot :length 47)
 
                                    :else
                                    (s/array HotSlot :length 46)))))
