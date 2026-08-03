@@ -7,7 +7,9 @@
   (:import  [java.nio ByteBuffer ByteOrder]
             [java.io FileOutputStream]))
 
-(def ^:dynamic *debug* false)
+(def ^:dynamic *debug*
+  (boolean (or (System/getenv "GDEDIT_DEBUG")
+               (System/getProperty "gdedit.debug"))))
 
 (defmacro after-block-version
   "Only return the body (else nil) if the block version is greater than or equal to `version`."
@@ -1082,9 +1084,27 @@
              (pprint block-data))
 
          ;; Verify we've reached the expected position
+         ;; Verify we've reached the expected position
          _ (when *debug*
              (u/print-line "expected-end-position" expected-end-position)
              (u/print-line "actual position" (.position bb)))
+         _ (when (not= expected-end-position (.position bb))
+             (let [actual (.position bb)
+                   delta  (- actual expected-end-position)]
+               (u/print-line "")
+               (u/print-line "!!! BLOCK READ DESYNC !!!")
+               (u/print-line "  block id:       " id)
+               (u/print-line "  block length:   " length)
+               (u/print-line "  expected end:   " expected-end-position)
+               (u/print-line "  actual pos:     " actual)
+               (u/print-line "  delta (bytes):  " delta)
+               (u/print-line "  delta / 4:      " (/ (double delta) 4.0))
+               (when (map? block-data)
+                 (when-let [items (:inventory-items block-data)]
+                   (u/print-line "  items read:     " (count items))
+                   (doseq [[i it] (map-indexed vector items)]
+                     (u/print-line "    " i (:basename it) "stack:" (:stack-count it)))))
+               (u/print-line "")))
          _ (assert (= expected-end-position (.position bb)))
 
          ;; Verify we have the correct enc-state at this point
